@@ -1,0 +1,65 @@
+name: Flutter Android Build
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.22.1'
+
+      - name: Display Flutter Version
+        run: flutter --version
+
+      - name: Accept Android licenses
+        run: yes | flutter doctor --android-licenses
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build appbundle
+        run: flutter build appbundle
+
+#      - name: Sign app
+#        uses: r0adkll/sign-android-release@v1
+#        # ID used to access action output
+#        id: sign_app
+#        with:
+#          releaseDirectory: build/app/outputs/flutter-apk
+#          signingKeyBase64: ${{ secrets.KEYSTORE_FILE }}
+#          alias: ${{ secrets.KEY_ALIAS }}
+#          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+#          keyPassword: ${{ secrets.KEY_PASSWORD }}
+#        env:
+#          # override default build-tools version (33.0.0) -- optional
+#          BUILD_TOOLS_VERSION: "34.0.0"
+
+#      - name: Save APK artifact
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: app-release
+#          path: build/app/outputs/apk/release/app-release.apk
+
+      - name : Upload App to Play-store
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: com.purpus
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+          inAppUpdatePriority: 5
+          # userFraction: 1.0
+          mappingFile: build/app/outputs/mapping/release/mapping.txt
+          debugSymbols: build/app/intermediates/merged_native_libs/release/out/lib

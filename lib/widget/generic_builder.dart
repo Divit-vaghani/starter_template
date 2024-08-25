@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 
 class GenericBuilder<T> extends StatefulWidget {
-  const GenericBuilder(
-      {super.key,
-      required this.future,
-      this.initialData,
-      required this.builder});
+  const GenericBuilder({super.key, required this.future, this.initialData, required this.builder});
 
   final Future<T>? future;
   final AsyncWidgetBuilder<T> builder;
@@ -23,10 +19,7 @@ class _GenericBuilderState<T> extends State<GenericBuilder<T>> {
   @override
   void initState() {
     super.initState();
-    _snapshot = widget.initialData == null
-        ? AsyncSnapshot<T>.nothing()
-        : AsyncSnapshot<T>.withData(
-            ConnectionState.none, widget.initialData as T);
+    _snapshot = widget.initialData == null ? AsyncSnapshot<T>.nothing() : AsyncSnapshot<T>.withData(ConnectionState.none, widget.initialData as T);
     _subscribe();
   }
 
@@ -56,13 +49,11 @@ class _GenericBuilderState<T> extends State<GenericBuilder<T>> {
     _activeCallbackIdentity = callbackIdentity;
     widget.future!.then<void>((T data) {
       if (_activeCallbackIdentity == callbackIdentity) {
-        setState(() =>
-            _snapshot = AsyncSnapshot<T>.withData(ConnectionState.done, data));
+        setState(() => _snapshot = AsyncSnapshot<T>.withData(ConnectionState.done, data));
       }
     }, onError: (Object error, StackTrace stackTrace) {
       if (_activeCallbackIdentity == callbackIdentity) {
-        setState(() => _snapshot = AsyncSnapshot<T>.withError(
-            ConnectionState.done, error, stackTrace));
+        setState(() => _snapshot = AsyncSnapshot<T>.withError(ConnectionState.done, error, stackTrace));
       }
       assert(() {
         if (GenericBuilder.debugRethrowError) {

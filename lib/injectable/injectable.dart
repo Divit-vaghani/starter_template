@@ -9,12 +9,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:starter_template/firebase_options.dart';
 import 'package:starter_template/injectable/injectable.config.dart';
 import 'package:starter_template/services/web_service/cache_interceptor/cache_interceptor.dart';
+import 'package:starter_template/utils/base_device_info/base_device_info_utils.dart';
 
 final getIt = GetIt.instance;
 
@@ -24,10 +26,8 @@ Future<void> configuration({required void Function() runApp}) async {
     () async {
       WidgetsFlutterBinding.ensureInitialized();
       await getIt.init();
-      await FirebaseCrashlytics.instance
-          .setCrashlyticsCollectionEnabled(kDebugMode ? false : true);
-      FlutterError.onError = (errorDetails) =>
-          FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(kDebugMode ? false : true);
+      FlutterError.onError = (errorDetails) => FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
       PlatformDispatcher.instance.onError = (error, stack) {
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
         return true;
@@ -37,13 +37,10 @@ Future<void> configuration({required void Function() runApp}) async {
       getIt<Dio>().interceptors.add(RetryInterceptor(dio: getIt<Dio>()));
       runApp();
     },
-    (error, stackTrace) => FirebaseCrashlytics.instance
-        .recordError(error, stackTrace, fatal: true),
+    (error, stackTrace) => FirebaseCrashlytics.instance.recordError(error, stackTrace, fatal: true),
     zoneSpecification: ZoneSpecification(
-      handleUncaughtError: (Zone zone, ZoneDelegate delegate, Zone parent,
-          Object error, StackTrace stackTrace) {
-        FirebaseCrashlytics.instance
-            .recordError(error, stackTrace, fatal: true);
+      handleUncaughtError: (Zone zone, ZoneDelegate delegate, Zone parent, Object error, StackTrace stackTrace) {
+        FirebaseCrashlytics.instance.recordError(error, stackTrace, fatal: true);
       },
     ),
   );
@@ -54,7 +51,7 @@ abstract class RegisterModule {
   @singleton
   Dio dio() => Dio();
 
-  String get baseUrl => 'https://61028c7079ed68001748216c.mockapi.io/';
+  String get baseUrl => const String.fromEnvironment('BASE_URL');
 
   @preResolve
   Future<SharedPreferences> prefs() => SharedPreferences.getInstance();
@@ -63,6 +60,13 @@ abstract class RegisterModule {
   Future<Directory> temporaryDirectory() => getTemporaryDirectory();
 
   @preResolve
-  Future<FirebaseApp> initializeFireBase() =>
-      Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  Future<PackageInfo> packageInfo() => PackageInfo.fromPlatform();
+
+  @preResolve
+  Future<BaseDevice> deviceInfo() => BaseDeviceInfoUtils.baseDeviceInfo();
+
+  @preResolve
+  Future<FirebaseApp> initializeFireBase() {
+    return Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  }
 }
